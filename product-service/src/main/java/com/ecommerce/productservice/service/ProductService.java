@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 public class ProductService {
@@ -38,5 +39,11 @@ public class ProductService {
     public List<Product> search(String name)
     {
         return productRepository.findByNameContainingIgnoreCase(name);
+    }
+
+    public Product getById(UUID id)
+    {
+        return productRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Product not found"));
     }
 }
