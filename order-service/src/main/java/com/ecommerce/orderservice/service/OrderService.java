@@ -1,5 +1,7 @@
 package com.ecommerce.orderservice.service;
 
+import com.ecommerce.orderservice.client.InventoryClient;
+import com.ecommerce.orderservice.client.PaymentClient;
 import com.ecommerce.orderservice.client.ProductClient;
 import com.ecommerce.orderservice.dto.OrderRequest;
 import com.ecommerce.orderservice.dto.Product;
@@ -19,6 +21,12 @@ public class OrderService {
     @Autowired
     private ProductClient productClient;
 
+    @Autowired
+    private PaymentClient paymentClient;
+
+    @Autowired
+    private InventoryClient inventoryClient;
+
     public Order createOrder(OrderRequest request)
     {
         Product product = productClient.getProduct(request.getProductId());
@@ -32,11 +40,29 @@ public class OrderService {
         order.setProductId(product.getId());
         order.setQuantity(request.getQuantity());
         order.setTotalPrice(total);
-        order.setStatus("CREATED");
         order.setCreatedAt(LocalDateTime.now());
 
-        orderRepository.save(order);
+        try {
+            paymentClient.processPayment(total);
 
+            try {
+                inventoryClient.reduce(product.getId(), request.getQuantity());
+
+                order.setStatus("COMPLETED");
+
+            } catch (Exception inventoryError) {
+
+                paymentClient.refund(total);
+
+                order.setStatus("FAILED");
+            }
+
+        } catch (Exception paymentError) {
+            order.setStatus("FAILED");
+        }
+
+        orderRepository.save(order);
         return order;
     }
+
 }

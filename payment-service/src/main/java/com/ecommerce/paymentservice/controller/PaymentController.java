@@ -1,6 +1,5 @@
 package com.ecommerce.paymentservice.controller;
 
-
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -8,12 +7,21 @@ import org.springframework.web.bind.annotation.*;
 public class PaymentController {
 
     @PostMapping
-    public String processPayment(@RequestParam double amount)
-    {
-        if(Math.random()<0.5)
-        {
-            return "Payment Failed";
+    public String processPayment(
+            @RequestParam double amount,
+            @RequestParam(defaultValue = "false") boolean fail
+    ) {
+        if (fail) {
+            throw new RuntimeException("Payment failed");
         }
-        return "Payment Success";
+
+        System.out.println("PAYMENT SUCCESS for amount: " + amount);
+        return "PAYMENT_SUCCESS";
+    }
+
+    @PostMapping("/refund")
+    public String refund(@RequestParam double amount) {
+        System.out.println("REFUND TRIGGERED for amount: " + amount);
+        return "REFUND_SUCCESS";
     }
 }
