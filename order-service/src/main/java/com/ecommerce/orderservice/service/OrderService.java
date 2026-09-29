@@ -3,8 +3,10 @@ package com.ecommerce.orderservice.service;
 import com.ecommerce.orderservice.client.InventoryClient;
 import com.ecommerce.orderservice.client.PaymentClient;
 import com.ecommerce.orderservice.client.ProductClient;
+import com.ecommerce.orderservice.dto.OrderEvent;
 import com.ecommerce.orderservice.dto.OrderRequest;
 import com.ecommerce.orderservice.dto.Product;
+import com.ecommerce.orderservice.kafka.KafkaProducer;
 import com.ecommerce.orderservice.repository.OrderRepository;
 import com.ecommerce.orderservice.model.Order;
 
@@ -26,6 +28,9 @@ public class OrderService {
 
     @Autowired
     private InventoryClient inventoryClient;
+
+    @Autowired
+    private KafkaProducer kafkaProducer;
 
     public Order createOrder(OrderRequest request)
     {
@@ -62,6 +67,14 @@ public class OrderService {
         }
 
         orderRepository.save(order);
+        if (order.getStatus().equals("COMPLETED")) {
+            OrderEvent event = new OrderEvent();
+            event.setOrderId(order.getId());
+            event.setStatus(order.getStatus());
+            event.setAmount(order.getTotalPrice());
+
+            kafkaProducer.sendEvent(event);
+        }
         return order;
     }
 
